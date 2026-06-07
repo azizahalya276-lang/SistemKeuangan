@@ -2,7 +2,7 @@ package com.mycompany.sistemkeuangan.model;
 
 public class Hutang extends Transaksi {
     
-    private int idHutang;
+    private int idtransaksi;
     private String pemberiPinjaman;
     private String jatuhTempo;
     private String currentStatus;
@@ -34,12 +34,12 @@ public class Hutang extends Transaksi {
         this.jatuhTempo = jatuhTempo;
     }
     
-    public int getIdHutang() {
-        return idHutang;
+    public int getIdtransaksi() {
+    return idtransaksi;
     }
 
-    public void setIdHutang(int idHutang) {
-        this.idHutang = idHutang;
+    public void setidtransaksi(int idtransaksi) {
+    this.idtransaksi = idtransaksi;
     }
 
     @Override

@@ -156,32 +156,90 @@ public class TransaksiForm extends javax.swing.JFrame {
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
         int row = jTable2.getSelectedRow();
-        if(row >= 0) {
-            String jenis = jTable2.getValueAt(row, 2).toString();
-            switch (jenis) {
-                case "Pendapatan" -> {
-                    Pendapatan pendapatan = (Pendapatan) user.getDaftarTransaksi().get(row);
-                    new PendapatanForm(user, pendapatan).setVisible(true);
+
+        if (row >= 0) {
+
+            int id = Integer.parseInt(jTable2.getValueAt(row, 0).toString());
+            String jenis = jTable2.getValueAt(row, 3).toString();
+
+            // contoh ambil input baru (bisa dari dialog / form edit)
+            String tanggalBaru = JOptionPane.showInputDialog(this, "Tanggal baru:");
+            String jumlahStr = JOptionPane.showInputDialog(this, "Jumlah baru:");
+            double jumlahBaru = Double.parseDouble(jumlahStr);
+
+            Connection conn = null;
+
+            try {
+                conn = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "");
+
+                conn.setAutoCommit(false); // 🔥 TRANSACTION
+
+                // 🔵 UPDATE TRANSAKSI
+                String sql1 = "UPDATE transaksi SET tanggal=?, jumlah=? WHERE id_transaksi=?";
+                PreparedStatement ps1 = conn.prepareStatement(sql1);
+                ps1.setString(1, tanggalBaru);
+                ps1.setDouble(2, jumlahBaru);
+                ps1.setInt(3, id);
+                ps1.executeUpdate();
+
+                // 🔵 UPDATE DETAIL SESUAI JENIS
+                switch (jenis) {
+
+                    case "Pendapatan":
+                        String sumber = JOptionPane.showInputDialog(this, "Sumber baru:");
+                        String sql2 = "UPDATE pendapatan SET sumber=? WHERE id_transaksi=?";
+                        PreparedStatement ps2 = conn.prepareStatement(sql2);
+                        ps2.setString(1, sumber);
+                        ps2.setInt(2, id);
+                        ps2.executeUpdate();
+                        break;
+
+                    case "Pengeluaran":
+                        String kebutuhan = JOptionPane.showInputDialog(this, "Kebutuhan baru:");
+                        String sql3 = "UPDATE pengeluaran SET kebutuhan=? WHERE id_transaksi=?";
+                        PreparedStatement ps3 = conn.prepareStatement(sql3);
+                        ps3.setString(1, kebutuhan);
+                        ps3.setInt(2, id);
+                        ps3.executeUpdate();
+                        break;
+
+                    case "Hutang":
+                        String pemberi = JOptionPane.showInputDialog(this, "Pemberi pinjaman:");
+                        String tempo = JOptionPane.showInputDialog(this, "Jatuh tempo:");
+                        String sql4 = "UPDATE hutang SET pemberipinjaman=?, jatuhtempo=? WHERE id_transaksi=?";
+                        PreparedStatement ps4 = conn.prepareStatement(sql4);
+                        ps4.setString(1, pemberi);
+                        ps4.setString(2, tempo);
+                        ps4.setInt(3, id);
+                        ps4.executeUpdate();
+                        break;
+
+                    case "Tabungan":
+                        String tujuan = JOptionPane.showInputDialog(this, "Tujuan baru:");
+                        String sql5 = "UPDATE tabungan SET tujuan=? WHERE id_transaksi=?";
+                        PreparedStatement ps5 = conn.prepareStatement(sql5);
+                        ps5.setString(1, tujuan);
+                        ps5.setInt(2, id);
+                        ps5.executeUpdate();
+                        break;
                 }
 
-                case "Pengeluaran" -> {
-                    Pengeluaran pengeluaran = (Pengeluaran) user.getDaftarTransaksi().get(row);
-                    new PengeluaranForm(user, pengeluaran).setVisible(true);
-                }
+                conn.commit(); // 🔥 SIMPAN
 
-                case "Hutang" -> {
-                    Hutang hutang = (Hutang) user.getDaftarTransaksi().get(row);
-                    new HutangForm(user, hutang).setVisible(true);
-                }
+                JOptionPane.showMessageDialog(this, "Data berhasil diupdate!");
+                loadTransaksiTable();
 
-                case "Tabungan" -> {
-                    Tabungan tabungan = (Tabungan) user.getDaftarTransaksi().get(row);
-                    new TabunganForm(user, tabungan).setVisible(true);
-                }
-                default -> JOptionPane.showMessageDialog(this, "Jenis transaksi tidak dikenali!");
+            } catch (Exception e) {
+                try {
+                    if (conn != null) conn.rollback(); // 🔥 rollback
+                } catch (SQLException ex) {}
+
+                JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
             }
+
         } else {
-            JOptionPane.showMessageDialog(this, "Pilih transaksi dulu!");
+            JOptionPane.showMessageDialog(this, "Pilih data dulu!");
         }
     }//GEN-LAST:event_jButton3ActionPerformed
 
@@ -213,26 +271,19 @@ public class TransaksiForm extends javax.swing.JFrame {
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         int row = jTable2.getSelectedRow();
-        if(row >= 0) {
+
+        if (row >= 0) {
             try (Connection conn = DriverManager.getConnection(
                     "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
 
-                String id = jTable2.getValueAt(row, 0).toString();
-                String jenis = jTable2.getValueAt(row, 3).toString();
+                int id = Integer.parseInt(jTable2.getValueAt(row, 0).toString());
 
-                String sql = switch (jenis) {
-                    case "Pendapatan" -> "DELETE FROM pendapatan WHERE id_pendapatan=?";
-                    case "Pengeluaran" -> "DELETE FROM pengeluaran WHERE id_pengeluaran=?";
-                    case "Hutang" -> "DELETE FROM hutang WHERE id_hutang=?";
-                    case "Tabungan" -> "DELETE FROM tabungan WHERE id_tabungan=?";
-                    default -> null;
-                };
-
+                String sql = "DELETE FROM transaksi WHERE idtransaksi=?";
                 PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setInt(1, Integer.parseInt(id));
+                ps.setInt(1, id);
                 ps.executeUpdate();
 
-                JOptionPane.showMessageDialog(this, "Data dihapus!");
+                JOptionPane.showMessageDialog(this, "Data berhasil dihapus!");
                 loadTransaksiTable();
 
             } catch (SQLException e) {
@@ -249,39 +300,77 @@ public class TransaksiForm extends javax.swing.JFrame {
 
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
         int row = jTable2.getSelectedRow();
-        if(row >= 0) {
 
+        if (row >= 0) {
             try (Connection conn = DriverManager.getConnection(
                     "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
 
-                String id = jTable2.getValueAt(row, 0).toString();
+                int id = Integer.parseInt(jTable2.getValueAt(row, 0).toString());
                 String jenis = jTable2.getValueAt(row, 3).toString();
+                double jumlah = Double.parseDouble(jTable2.getValueAt(row, 2).toString());
 
-                String sql = switch (jenis) {
-                    case "Pendapatan" -> "UPDATE pendapatan SET status=? WHERE id_pendapatan=?";
-                    case "Hutang" -> "UPDATE hutang SET status=? WHERE id_hutang=?";
-                    default -> null;
-                };
+                String pesan = "";
 
-                if (sql == null) {
-                    JOptionPane.showMessageDialog(this, "Jenis ini tidak bisa diproses!");
-                    return;
+                switch (jenis) {
+
+                    case "Pendapatan":
+                        String sql1 = "SELECT sumber FROM pendapatan WHERE idtransaksi=?";
+                        PreparedStatement ps1 = conn.prepareStatement(sql1);
+                        ps1.setInt(1, id);
+                        ResultSet rs1 = ps1.executeQuery();
+
+                        if (rs1.next()) {
+                            String sumber = rs1.getString("sumber");
+                            pesan = "Pendapatan dari " + sumber + " sebesar " + jumlah;
+                        }
+                        break;
+
+                    case "Pengeluaran":
+                        String sql2 = "SELECT kebutuhan FROM pengeluaran WHERE idtransaksi=?";
+                        PreparedStatement ps2 = conn.prepareStatement(sql2);
+                        ps2.setInt(1, id);
+                        ResultSet rs2 = ps2.executeQuery();
+
+                        if (rs2.next()) {
+                            String kebutuhan = rs2.getString("kebutuhan");
+                            pesan = "Pengeluaran untuk " + kebutuhan + " sebesar " + jumlah;
+                        }
+                        break;
+
+                    case "Hutang":
+                        String sql3 = "SELECT pemberipinjaman, jatuhtempo FROM hutang WHERE idtransaksi=?";
+                        PreparedStatement ps3 = conn.prepareStatement(sql3);
+                        ps3.setInt(1, id);
+                        ResultSet rs3 = ps3.executeQuery();
+
+                        if (rs3.next()) {
+                            String pemberi = rs3.getString("pemberipinjaman");
+                            String tempo = rs3.getString("jatuhtempo");
+                            pesan = "Hutang dari " + pemberi + " jatuh tempo " + tempo + " sebesar " + jumlah;
+                        }
+                        break;
+
+                    case "Tabungan":
+                        String sql4 = "SELECT tujuan FROM tabungan WHERE idtransaksi=?";
+                        PreparedStatement ps4 = conn.prepareStatement(sql4);
+                        ps4.setInt(1, id);
+                        ResultSet rs4 = ps4.executeQuery();
+
+                        if (rs4.next()) {
+                            String tujuan = rs4.getString("tujuan");
+                            pesan = "Menabung untuk " + tujuan + " sebesar " + jumlah;
+                        }
+                        break;
                 }
 
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setString(1, "Selesai");
-                ps.setInt(2, Integer.parseInt(id));
-                ps.executeUpdate();
+                JOptionPane.showMessageDialog(this, pesan);
 
-                JOptionPane.showMessageDialog(this, "Transaksi diproses!");
-                loadTransaksiTable();
-
-            } catch (SQLException e) {
-                JOptionPane.showMessageDialog(this, "Gagal proses: " + e.getMessage());
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
             }
 
         } else {
-            JOptionPane.showMessageDialog(this, "Pilih transaksi dulu!");
+            JOptionPane.showMessageDialog(this, "Pilih data dulu!");
         }
     }//GEN-LAST:event_jButton7ActionPerformed
 
@@ -298,36 +387,30 @@ public class TransaksiForm extends javax.swing.JFrame {
         try (Connection conn = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
 
-                String sql =
-                    "SELECT idpendapatan, tanggal, jumlah, 'Pendapatan' AS jenis, prioritas, tenggat, status FROM pendapatan " +
-                    "UNION ALL " +
-                    "SELECT idpengeluaran, tanggal, jumlah, 'Pengeluaran', prioritas, tenggat, status FROM pengeluaran " +
-                    "UNION ALL " +
-                    "SELECT idhutang, tanggal, jumlah, 'Hutang', prioritas, tenggat, status FROM hutang " +
-                    "UNION ALL " +
-                    "SELECT idtabungan, tanggal, jumlah, 'Tabungan', prioritas, tenggat, status status FROM tabungan";
+            String sql = "SELECT * FROM transaksi WHERE iduser=?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, user.getIduser());
 
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
 
-                model.setRowCount(0);
+            model.setRowCount(0);
 
-                while (rs.next()) {
-                    model.addRow(new Object[]{
-                        rs.getInt("id"),
-                        rs.getString("tanggal"),
-                        rs.getDouble("jumlah"),
-                        rs.getString("jenis"),
-                        rs.getString("prioritas"),
-                        rs.getString("tenggat"),
-                        rs.getString("status")
-                    });
-                }
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getInt("idtransaksi"),
+                    rs.getString("tanggal"),
+                    rs.getDouble("jumlah"),
+                    rs.getString("jenis"),
+                    rs.getString("prioritas"),
+                    rs.getString("tenggat"),
+                    rs.getString("status")
+                });
+            }
 
-                jTable2.setModel(model);
+            jTable2.setModel(model);
 
-            } catch (SQLException e) {
-                JOptionPane.showMessageDialog(this, "Gagal load transaksi: " + e.getMessage());
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Gagal load transaksi: " + e.getMessage());
         }
     }
     

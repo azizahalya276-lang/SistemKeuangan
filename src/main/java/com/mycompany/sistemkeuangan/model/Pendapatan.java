@@ -2,7 +2,7 @@ package com.mycompany.sistemkeuangan.model;
 
 public class Pendapatan extends Transaksi {
 
-    private int idPendapatan;
+    private int idtransaksi;
     private String sumber;
     private String currentStatus;
 
@@ -23,12 +23,12 @@ public class Pendapatan extends Transaksi {
         this.sumber = sumber;
     }
     
-    public int getIdPendapatan() {
-    return idPendapatan;
+    public int getIdtransaksi() {
+    return idtransaksi;
     }
 
-    public void setIdPendapatan(int idPendapatan) {
-    this.idPendapatan = idPendapatan;
+    public void setidtransaksi(int idtransaksi) {
+    this.idtransaksi = idtransaksi;
     }
     
 

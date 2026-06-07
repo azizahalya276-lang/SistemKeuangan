@@ -7,6 +7,7 @@ import com.mycompany.sistemkeuangan.model.User;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class PendapatanForm extends javax.swing.JFrame {
@@ -201,67 +202,112 @@ public class PendapatanForm extends javax.swing.JFrame {
     }//GEN-LAST:event_jFormattedTextField1ActionPerformed
 // simpan data
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-
-         try {
-            String tanggalStr = jFormattedTextField1.getText();
+        try {
+            String tanggal = jFormattedTextField1.getText();
             double jumlah = Double.parseDouble(jTextField2.getText());
             String prioritas = jTextField3.getText();
-            String tenggatStr = jFormattedTextField2.getText();
+            String tenggat = jFormattedTextField2.getText();
             String sumber = jTextField5.getText();
             String status = jComboBoxStatus.getSelectedItem().toString();
 
-            // Convert ke DATE
-            java.sql.Date tanggal = java.sql.Date.valueOf(tanggalStr);
-            java.sql.Date tenggat = java.sql.Date.valueOf(tenggatStr);
-
-            // Buat object (OOP jalan)
-            Pendapatan p = new Pendapatan(tanggalStr, jumlah, prioritas, tenggatStr, sumber);
-            p.setStatus(status);
-
-            // proses & info (sesuai tugas kamu)
-            p.proses();
-            System.out.println(p.info());
-
-            // Koneksi DB
             Connection conn = DriverManager.getConnection(
                     "jdbc:mysql://localhost:3306/sistemkeuangan",
                     "root",
-                    ""
-            );
+                    "");
 
-            String sql = "INSERT INTO pendapatan "
-                    + "(iduser, tanggal, jumlah, prioritas, tenggat, status, sumber) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            if (pendapatan == null) {
 
-            PreparedStatement pst = conn.prepareStatement(sql);
+                // ===================
+                // INSERT TRANSAKSI
+                // ===================
 
-            pst.setInt(1, user.getIduser());
-            pst.setDate(2, tanggal);
-            pst.setDouble(3, jumlah);
-            pst.setString(4, prioritas);
-            pst.setDate(5, tenggat);
-            pst.setString(6, status);
-            pst.setString(7, sumber);
+                String sql1 =
+                        "INSERT INTO transaksi(iduser,tanggal,jumlah,jenis,prioritas,tenggat,status) "
+                        + "VALUES(?,?,?,?,?,?,?)";
 
-            pst.executeUpdate();
+                PreparedStatement ps1 =
+                        conn.prepareStatement(sql1,
+                        PreparedStatement.RETURN_GENERATED_KEYS);
 
-            JOptionPane.showMessageDialog(this,
-                    "Pendapatan berhasil disimpan!\n" + p.info());
+                ps1.setInt(1, user.getIduser());
+                ps1.setString(2, tanggal);
+                ps1.setDouble(3, jumlah);
+                ps1.setString(4, "Pendapatan");
+                ps1.setString(5, prioritas);
+                ps1.setString(6, tenggat);
+                ps1.setString(7, status);
 
-            pst.close();
+                ps1.executeUpdate();
+
+                ResultSet rs = ps1.getGeneratedKeys();
+                rs.next();
+
+                int idtransaksi = rs.getInt(1);
+
+                // ===================
+                // INSERT PENDAPATAN
+                // ===================
+
+                String sql2 =
+                        "INSERT INTO pendapatan(idtransaksi,sumber) "
+                        + "VALUES(?,?)";
+
+                PreparedStatement ps2 =
+                        conn.prepareStatement(sql2);
+
+                ps2.setInt(1, idtransaksi);
+                ps2.setString(2, sumber);
+
+                ps2.executeUpdate();
+
+                JOptionPane.showMessageDialog(this,
+                        "Pendapatan berhasil ditambahkan!");
+
+            } else {
+
+                // ===================
+                // UPDATE TRANSAKSI
+                // ===================
+
+                String sql1 =
+                        "UPDATE transaksi SET "
+                        + "tanggal=?,jumlah=?,prioritas=?,tenggat=?,status=? "
+                        + "WHERE idtransaksi=?";
+
+                PreparedStatement ps1 =
+                        conn.prepareStatement(sql1);
+
+                ps1.setString(1, tanggal);
+                ps1.setDouble(2, jumlah);
+                ps1.setString(3, prioritas);
+                ps1.setString(4, tenggat);
+                ps1.setString(5, status);
+                ps1.setInt(6, pendapatan.getIdtransaksi());
+
+                ps1.executeUpdate();
+
+                // ===================
+                // UPDATE DETAIL
+                // ===================
+
+                String sql2 =
+                        "UPDATE pendapatan SET sumber=? "
+                        + "WHERE idtransaksi=?";
+
+                PreparedStatement ps2 =
+                        conn.prepareStatement(sql2);
+
+                ps2.setString(1, sumber);
+                ps2.setInt(2, pendapatan.getIdtransaksi());
+
+                ps2.executeUpdate();
+
+                JOptionPane.showMessageDialog(this,
+                        "Pendapatan berhasil diupdate!");
+            }
+
             conn.close();
-
             dispose();
-
-        } catch (NumberFormatException e) {
-
-            JOptionPane.showMessageDialog(this,
-                    "Jumlah harus angka!");
-
-        } catch (IllegalArgumentException e) {
-
-            JOptionPane.showMessageDialog(this,
-                    "Format tanggal harus yyyy-mm-dd!");
 
         } catch (Exception e) {
 
