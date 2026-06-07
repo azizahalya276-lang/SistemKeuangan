@@ -1,7 +1,8 @@
 package com.mycompany.sistemkeuangan.model;
 
 public class Tabungan extends Transaksi {
-
+    
+    private int idTabungan;
     private String tujuan;
     private String currentStatus;
 
@@ -12,25 +13,34 @@ public class Tabungan extends Transaksi {
         super(tanggal, jumlah, prioritas, tenggat);
 
         this.tujuan = tujuan;
+        this.currentStatus = "Belum Terkumpul";
     }
 
     public String getTujuan() {
         return tujuan;
     }
     
-     public void setTujuan(String tujuan) {
+    public void setTujuan(String tujuan) {
         this.tujuan = tujuan;
+    }
+     
+    public int getIdTabungan() {
+        return idTabungan;
+    }
+
+    public void setIdTabungan(int idTabungan) {
+        this.idTabungan = idTabungan;
     }
 
     @Override
     public void proses() {
-        System.out.println("Memproses tabungan...");
+        System.out.println("Menabung Rp " + getJumlah() + " untuk " + tujuan);
     }
 
     @Override
     public String info() {
         return "Tabungan untuk " + tujuan +
-               " sebesar " + jumlah;
+               " sebesar Rp " + getJumlah();
     }
 
     @Override
@@ -40,5 +50,5 @@ public class Tabungan extends Transaksi {
 
     public void setStatus(String newStatus) {
         this.currentStatus = newStatus;
-    }
+    }    
 }

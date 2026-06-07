@@ -4,6 +4,11 @@ import javax.swing.*;
 import com.mycompany.sistemkeuangan.model.Pendapatan;
 import com.mycompany.sistemkeuangan.model.User;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
 public class PendapatanForm extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger =
@@ -11,7 +16,7 @@ public class PendapatanForm extends javax.swing.JFrame {
 
     private User user;
     private Pendapatan pendapatan;
-    private String statusBaru;
+    private String status;
 
     // Konstruktor menerima User aktif
     public PendapatanForm(User user) {
@@ -93,7 +98,7 @@ public class PendapatanForm extends javax.swing.JFrame {
 
         jLabel4.setText("Prioritas : ");
 
-        jComboBoxStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Pendding", "Selesai", " " }));
+        jComboBoxStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Pending", "Selesai", " " }));
         jComboBoxStatus.addActionListener(this::jComboBoxStatusActionPerformed);
 
         jLabel8.setText("Status : ");
@@ -196,34 +201,74 @@ public class PendapatanForm extends javax.swing.JFrame {
     }//GEN-LAST:event_jFormattedTextField1ActionPerformed
 // simpan data
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        try {
-        String tanggal = jFormattedTextField1.getText();
-        double jumlah = Double.parseDouble(jTextField2.getText());
-        String prioritas = jTextField3.getText();
-        String tenggat = jFormattedTextField2.getText();
-        String sumber = jTextField5.getText();
 
-        if (pendapatan != null) {
-            // EDIT transaksi lama
-            pendapatan.setTanggal(tanggal);
-            pendapatan.setJumlah(jumlah);
-            pendapatan.setPrioritas(prioritas);
-            pendapatan.setTenggat(tenggat);
-            pendapatan.setSumber(sumber);
-            pendapatan.setStatus(statusBaru);
-            JOptionPane.showMessageDialog(this, "Pendapatan berhasil diedit!");
-        } else {
-            // TAMBAH transaksi baru
-            Pendapatan p = new Pendapatan(tanggal, jumlah, prioritas, tenggat, sumber);
-            p.setStatus(statusBaru);
-            if(user != null) user.tambahTransaksi(p);
-            JOptionPane.showMessageDialog(this, "Pendapatan berhasil ditambahkan!");
+         try {
+            String tanggalStr = jFormattedTextField1.getText();
+            double jumlah = Double.parseDouble(jTextField2.getText());
+            String prioritas = jTextField3.getText();
+            String tenggatStr = jFormattedTextField2.getText();
+            String sumber = jTextField5.getText();
+            String status = jComboBoxStatus.getSelectedItem().toString();
+
+            // Convert ke DATE
+            java.sql.Date tanggal = java.sql.Date.valueOf(tanggalStr);
+            java.sql.Date tenggat = java.sql.Date.valueOf(tenggatStr);
+
+            // Buat object (OOP jalan)
+            Pendapatan p = new Pendapatan(tanggalStr, jumlah, prioritas, tenggatStr, sumber);
+            p.setStatus(status);
+
+            // proses & info (sesuai tugas kamu)
+            p.proses();
+            System.out.println(p.info());
+
+            // Koneksi DB
+            Connection conn = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/sistemkeuangan",
+                    "root",
+                    ""
+            );
+
+            String sql = "INSERT INTO pendapatan "
+                    + "(iduser, tanggal, jumlah, prioritas, tenggat, status, sumber) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+            PreparedStatement pst = conn.prepareStatement(sql);
+
+            pst.setInt(1, user.getIduser());
+            pst.setDate(2, tanggal);
+            pst.setDouble(3, jumlah);
+            pst.setString(4, prioritas);
+            pst.setDate(5, tenggat);
+            pst.setString(6, status);
+            pst.setString(7, sumber);
+
+            pst.executeUpdate();
+
+            JOptionPane.showMessageDialog(this,
+                    "Pendapatan berhasil disimpan!\n" + p.info());
+
+            pst.close();
+            conn.close();
+
+            dispose();
+
+        } catch (NumberFormatException e) {
+
+            JOptionPane.showMessageDialog(this,
+                    "Jumlah harus angka!");
+
+        } catch (IllegalArgumentException e) {
+
+            JOptionPane.showMessageDialog(this,
+                    "Format tanggal harus yyyy-mm-dd!");
+
+        } catch (Exception e) {
+
+            JOptionPane.showMessageDialog(this,
+                    "Error : " + e.getMessage());
+
         }
-
-        dispose();
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "Jumlah harus berupa angka!");
-    }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed

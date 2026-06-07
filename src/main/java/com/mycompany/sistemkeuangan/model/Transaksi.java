@@ -1,25 +1,30 @@
 package com.mycompany.sistemkeuangan.model;
 
 public abstract class Transaksi implements ProsesTransaksi {
+    protected int id;
     protected String tanggal;
     protected double jumlah;
     protected String prioritas;
     protected String tenggat;
-
+    protected String status;
+    
     public Transaksi(String tanggal, double jumlah, String prioritas, String tenggat) {
         this.tanggal = tanggal;
         this.jumlah = jumlah;
         this.prioritas = prioritas;
         this.tenggat = tenggat;
+        this.status = "Belum Diproses";
     }
 
     public String getTanggal() { return tanggal; }
     public double getJumlah() { return jumlah; }
     public String getPrioritas() { return prioritas; }
     public String getTenggat() { return tenggat; }
+    public String getStatus() { return status; }
     
     public void setTanggal(String tanggal) {
     this.tanggal = tanggal;
+    
 }
 
 public void setJumlah(double jumlah) {
@@ -34,6 +39,19 @@ public void setTenggat(String tenggat) {
     this.tenggat = tenggat;
 }
 
-    public abstract String status();
+public int getId() {
+    return id;
 }
 
+public void setId(int id) {
+    this.id = id;
+}
+
+@Override
+public abstract String info(); // subclass wajib isi
+
+    public String status() {
+        return this.status;
+    }
+
+}

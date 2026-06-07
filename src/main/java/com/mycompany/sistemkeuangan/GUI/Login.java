@@ -1,15 +1,32 @@
 package com.mycompany.sistemkeuangan.GUI;
 
 import com.mycompany.sistemkeuangan.model.User;
+import java.awt.event.ActionEvent;
+import javax.swing.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Login extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger =
         java.util.logging.Logger.getLogger(Login.class.getName());
 
+
     public Login() {
         initComponents();
         setLocationRelativeTo(null); // form muncul di tengah layar
+        
+        jButton1 = new javax.swing.JButton();
+        jButton2 = new javax.swing.JButton();
+
+        jButton1.setText("Login");
+        jButton1.addActionListener(this::jButtonLoginActionPerformed);
+
+        jButton2.setText("Register");
+        jButton2.addActionListener(this::jButtonRegisterActionPerformed);
     }
     
     @SuppressWarnings("unchecked")
@@ -24,6 +41,7 @@ public class Login extends javax.swing.JFrame {
         jTextField1 = new javax.swing.JTextField();
         jTextField2 = new javax.swing.JTextField();
         jPasswordField1 = new javax.swing.JPasswordField();
+        jButton2 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -40,13 +58,16 @@ public class Login extends javax.swing.JFrame {
         jLabel3.setText("Password : ");
 
         jLabel4.setFont(new java.awt.Font("Calibri", 0, 14)); // NOI18N
-        jLabel4.setText("Username : ");
+        jLabel4.setText("nama: ");
 
         jTextField1.addActionListener(this::jTextField1ActionPerformed);
 
         jTextField2.addActionListener(this::jTextField2ActionPerformed);
 
         jPasswordField1.addActionListener(this::jPasswordField1ActionPerformed);
+
+        jButton2.setText("Register");
+        jButton2.addActionListener(this::jButton2ActionPerformed);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -64,15 +85,15 @@ public class Login extends javax.swing.JFrame {
                             .addComponent(jLabel4)
                             .addComponent(jLabel2))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 198, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 198, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 198, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(72, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addGap(0, 0, Short.MAX_VALUE)
-                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(151, 151, 151))
+                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 198, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
+                .addContainerGap(77, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -91,44 +112,46 @@ public class Login extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3))
-                .addGap(30, 30, 30)
-                .addComponent(jButton1)
-                .addContainerGap(55, Short.MAX_VALUE))
+                .addGap(35, 35, 35)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButton1)
+                    .addComponent(jButton2))
+                .addContainerGap(50, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-                                       
-        String userId = jTextField1.getText();
-        String username = jTextField2.getText();
+        int iduser = Integer.parseInt(jTextField1.getText());
+        String nama = jTextField2.getText();
         String password = new String(jPasswordField1.getPassword());
 
-        // --- logika login sederhana ---
-        // cek apakah user sudah ada di database/list
-        User existingUser = cariUserDiDatabase(userId); // nanti diganti DAO/database
+        try (Connection conn = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
 
-        if(existingUser == null) {
-            // user baru → langsung buat dan simpan
-            User user = new User(userId, username, password);
-            simpanUserKeDatabase(user); // simpan ke DB
-            javax.swing.JOptionPane.showMessageDialog(this, "User baru berhasil ditambahkan!");
+            String sql = "SELECT * FROM user WHERE iduser=? AND nama=? AND password=?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, iduser);
+            ps.setString(2, nama);
+            ps.setString(3, password);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+            User user = new User(rs.getInt("iduser"),
+                                 rs.getString("nama"),
+                                 rs.getString("password"));
+            JOptionPane.showMessageDialog(this, "Login berhasil!");
 
             TransaksiForm mainForm = new TransaksiForm(user);
             mainForm.setVisible(true);
-            this.dispose();
+            this.dispose(); // tutup form login
         } else {
-            // user lama → cek cocok atau tidak
-            if(existingUser.getNama().equals(username) && existingUser.getPassword().equals(password)) {
-                javax.swing.JOptionPane.showMessageDialog(this, "Login berhasil!");
-
-                TransaksiForm mainForm = new TransaksiForm(existingUser);
-                mainForm.setVisible(true);
-                this.dispose();
-            } else {
-                javax.swing.JOptionPane.showMessageDialog(this, "User ID/Nama/Password salah!");
+                JOptionPane.showMessageDialog(this, "User ID/Nama/Password salah!");
             }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Koneksi database gagal: " + e.getMessage());
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -143,6 +166,38 @@ public class Login extends javax.swing.JFrame {
     private void jPasswordField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordField1ActionPerformed
        jButton1.doClick();
     }//GEN-LAST:event_jPasswordField1ActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        String iduser = jTextField1.getText();
+        String nama = jTextField2.getText();
+        String password = new String(jPasswordField1.getPassword());
+
+        try (Connection conn = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+
+            // cek apakah iduser atau nama sudah ada
+            String cekSql = "SELECT * FROM user WHERE iduser=? OR nama=?";
+            PreparedStatement cekPs = conn.prepareStatement(cekSql);
+            cekPs.setString(1, iduser);
+            cekPs.setString(2, nama);
+            ResultSet rs = cekPs.executeQuery();
+
+            if (rs.next()) {
+                JOptionPane.showMessageDialog(this, "User ID/Nama sudah digunakan!");
+            } else {
+                String insertSql = "INSERT INTO user (iduser, nama, password) VALUES (?, ?, ?)";
+                PreparedStatement insertPs = conn.prepareStatement(insertSql);
+                insertPs.setString(1, iduser);
+                insertPs.setString(2, nama);
+                insertPs.setString(3, password);
+                insertPs.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "Registrasi berhasil, silakan login!");
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Koneksi database gagal: " + e.getMessage());
+        }
+    }//GEN-LAST:event_jButton2ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -164,6 +219,7 @@ public class Login extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -172,4 +228,12 @@ public class Login extends javax.swing.JFrame {
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
     // End of variables declaration//GEN-END:variables
+
+    private void jButtonLoginActionPerformed(ActionEvent e) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    private void jButtonRegisterActionPerformed(ActionEvent e) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 }

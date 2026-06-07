@@ -4,6 +4,11 @@ import javax.swing.*;
 import com.mycompany.sistemkeuangan.model.Hutang;
 import com.mycompany.sistemkeuangan.model.User;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
 public class HutangForm extends javax.swing.JFrame {
 
     private User user;
@@ -191,34 +196,57 @@ public class HutangForm extends javax.swing.JFrame {
     }//GEN-LAST:event_jFormattedTextField1ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        try {
+       
         String tanggal = jFormattedTextField1.getText();
         double jumlah = Double.parseDouble(jTextField2.getText());
         String prioritas = jTextField3.getText();
         String tenggat = jFormattedTextField2.getText();
         String pemberiPinjaman = jTextField5.getText();
         String jatuhTempo = jFormattedTextField3.getText();
+        String status = jComboBoxStatus.getSelectedItem().toString();
 
-        if (hutang != null) {
-            // EDIT transaksi lama
-            hutang.setTanggal(tanggal);
-            hutang.setJumlah(jumlah);
-            hutang.setPrioritas(prioritas);
-            hutang.setTenggat(tenggat);
-            hutang.setPemberiPinjaman(pemberiPinjaman);
-            hutang.setJatuhTempo(jatuhTempo);
-            hutang.setStatus(statusBaru);
-            JOptionPane.showMessageDialog(this, "Hutang berhasil diedit!");
-        } else {
-            // TAMBAH transaksi baru
+        try (Connection conn = DriverManager.getConnection(
+            "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+
+            // =========================
+            // 1. SIMPAN KE TRANSAKSI
+            // =========================
+            String sql1 = "INSERT INTO transaksi (tanggal, jumlah, jenis, prioritas, tenggat, status, id_user) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            PreparedStatement ps1 = conn.prepareStatement(sql1);
+            ps1.setString(1, tanggal);
+            ps1.setDouble(2, jumlah);
+            ps1.setString(3, "Hutang");
+            ps1.setString(4, prioritas);
+            ps1.setString(5, tenggat);
+            ps1.setString(6, status);
+            ps1.setInt(7, user.getIduser());
+            ps1.executeUpdate();
+
+            // =========================
+            // 2. SIMPAN KE TABEL HUTANG
+            // =========================
+            String sql2 = "INSERT INTO hutang (iduser, jumlah, pemberi_pinjaman, jatuh_tempo) VALUES (?, ?, ?, ?)";
+            PreparedStatement ps2 = conn.prepareStatement(sql2);
+            ps2.setDouble(1, jumlah);
+            ps2.setString(2, pemberiPinjaman);
+            ps2.setString(3, jatuhTempo);
+            ps2.setInt(4, user.getIduser());
+            ps2.executeUpdate();
+
+            // =========================
+            // 3. OOP PROCESS
+            // =========================
             Hutang h = new Hutang(tanggal, jumlah, prioritas, tenggat, pemberiPinjaman, jatuhTempo);
-            h.setStatus(statusBaru);
-            if(user != null) user.tambahTransaksi(h);
-            JOptionPane.showMessageDialog(this, "Hutang berhasil ditambahkan!");
-        }
-        dispose();
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Jumlah harus berupa angka!");
+            h.setStatus(status);
+
+            h.proses();
+
+            JOptionPane.showMessageDialog(this, h.info());
+
+            dispose();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Gagal simpan hutang: " + e.getMessage());
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 

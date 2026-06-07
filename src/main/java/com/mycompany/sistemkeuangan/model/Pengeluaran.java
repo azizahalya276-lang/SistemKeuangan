@@ -1,7 +1,9 @@
 package com.mycompany.sistemkeuangan.model;
 
+
 public class Pengeluaran extends Transaksi {
 
+    private int idPengeluaran;
     private String kebutuhan;
     private String currentStatus;
 
@@ -11,25 +13,35 @@ public class Pengeluaran extends Transaksi {
 
         super(tanggal, jumlah, prioritas, tenggat);
         this.kebutuhan = kebutuhan;
+        this.currentStatus = "Pending";
     }
 
     public String getKebutuhan() {
         return kebutuhan;
     }
-    
+
     public void setKebutuhan(String kebutuhan) {
         this.kebutuhan = kebutuhan;
     }
 
+    public int getIdPengeluaran() {
+        return idPengeluaran;
+    }
+
+    public void setIdPengeluaran(int idPengeluaran) {
+        this.idPengeluaran = idPengeluaran;
+    }
+
     @Override
     public void proses() {
-        System.out.println("Memproses pengeluaran...");
+        System.out.println("Pengeluaran sebesar -" + getJumlah());
+        currentStatus = "Selesai";
     }
 
     @Override
     public String info() {
         return "Pengeluaran untuk " + kebutuhan +
-               " sebesar " + jumlah;
+               " sebesar Rp " + getJumlah();
     }
 
     @Override
@@ -40,4 +52,4 @@ public class Pengeluaran extends Transaksi {
     public void setStatus(String newStatus) {
         this.currentStatus = newStatus;
     }
-}
+}    

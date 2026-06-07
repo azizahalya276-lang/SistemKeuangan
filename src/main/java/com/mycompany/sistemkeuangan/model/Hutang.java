@@ -1,7 +1,8 @@
 package com.mycompany.sistemkeuangan.model;
 
 public class Hutang extends Transaksi {
-
+    
+    private int idHutang;
     private String pemberiPinjaman;
     private String jatuhTempo;
     private String currentStatus;
@@ -14,6 +15,7 @@ public class Hutang extends Transaksi {
 
         this.pemberiPinjaman = pemberiPinjaman;
         this.jatuhTempo = jatuhTempo;
+        this.currentStatus = "Belum Lunas";
     }
 
     public String getPemberiPinjaman() {
@@ -31,22 +33,31 @@ public class Hutang extends Transaksi {
     public void setJatuhTempo(String jatuhTempo) {
         this.jatuhTempo = jatuhTempo;
     }
+    
+    public int getIdHutang() {
+        return idHutang;
+    }
+
+    public void setIdHutang(int idHutang) {
+        this.idHutang = idHutang;
+    }
 
     @Override
     public void proses() {
-        System.out.println("Memproses hutang..");
+        System.out.println("Hutang dicatat sebesar Rp " + getJumlah());
+        currentStatus = "Belum Lunas";
     }
 
     @Override
     public String info() {
         return "Hutang kepada " + pemberiPinjaman +
-               " sebesar " + jumlah +
-               " jatuh tempo : " + jatuhTempo;
+               " sebesar Rp " + getJumlah() +
+               " | Jatuh tempo: " + jatuhTempo;
     }
 
     @Override
     public String status() {
-           return currentStatus;
+        return currentStatus;
     }
 
     public void setStatus(String newStatus) {

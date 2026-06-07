@@ -7,6 +7,13 @@ import com.mycompany.sistemkeuangan.model.Tabungan;
 import com.mycompany.sistemkeuangan.model.Transaksi;
 import com.mycompany.sistemkeuangan.model.User;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.table.DefaultTableModel;
+
 public class TransaksiForm extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger =
@@ -20,11 +27,13 @@ public class TransaksiForm extends javax.swing.JFrame {
     initComponents();
     setLocationRelativeTo(null);
 
-    jLabel1.setText("User : " + user.getNama());
-    jLabel2.setText("User ID : " + user.getId());
+    jLabel1.setText("Nama : " + user.getNama());
+    jLabel2.setText("User ID : " + user.getIduser());
+
+    System.out.println("Masuk ke TransaksiForm untuk user: " + user.getNama());
 
     loadTransaksiTable();
-}
+    }
 
     // Konstruktor default (supaya bisa dipanggil dari main)
     public TransaksiForm() {
@@ -53,11 +62,11 @@ public class TransaksiForm extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Tanggal", "Jumlah Uang", "Jenis", "Prioritas ", "Tenggat Waktu", "Status"
+                "ID", "Tanggal", "Jumlah Uang", "Jenis", "Prioritas", "Tenggat Waktu", "Status"
             }
-        ){
+        ) {
             boolean[] canEdit = new boolean [] {
-                true, true, false, true, true, false
+                false, false, false, false, false, false, false
             };
 
             @Override
@@ -83,7 +92,7 @@ public class TransaksiForm extends javax.swing.JFrame {
         jLabel3.setFont(new java.awt.Font("Calibri", 1, 18)); // NOI18N
         jLabel3.setText("TRANSAKSI KEUANGAN");
 
-        jLabel1.setText("user       : ");
+        jLabel1.setText("nama    : ");
 
         jLabel2.setText("user  ID : ");
 
@@ -148,21 +157,28 @@ public class TransaksiForm extends javax.swing.JFrame {
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
         int row = jTable2.getSelectedRow();
         if(row >= 0) {
-        // Ambil objek transaksi dari daftar user
-        Transaksi t = user.getDaftarTransaksi().get(row);
-        
-            t.proses();
-            JOptionPane.showMessageDialog(this, "Transaksi diproses: " + t.info());
-        
-
-            // Cek jenis transaksi dan buka form edit sesuai jenis
-            switch (t) {
-                case Pendapatan pendapatan -> new PendapatanForm(user, pendapatan).setVisible(true);
-                case Pengeluaran pengeluaran -> new PengeluaranForm(user, pengeluaran).setVisible(true);
-                case Hutang hutang -> new HutangForm(user, hutang).setVisible(true);
-                case Tabungan tabungan -> new TabunganForm(user, tabungan).setVisible(true);
-                default -> {
+            String jenis = jTable2.getValueAt(row, 2).toString();
+            switch (jenis) {
+                case "Pendapatan" -> {
+                    Pendapatan pendapatan = (Pendapatan) user.getDaftarTransaksi().get(row);
+                    new PendapatanForm(user, pendapatan).setVisible(true);
                 }
+
+                case "Pengeluaran" -> {
+                    Pengeluaran pengeluaran = (Pengeluaran) user.getDaftarTransaksi().get(row);
+                    new PengeluaranForm(user, pengeluaran).setVisible(true);
+                }
+
+                case "Hutang" -> {
+                    Hutang hutang = (Hutang) user.getDaftarTransaksi().get(row);
+                    new HutangForm(user, hutang).setVisible(true);
+                }
+
+                case "Tabungan" -> {
+                    Tabungan tabungan = (Tabungan) user.getDaftarTransaksi().get(row);
+                    new TabunganForm(user, tabungan).setVisible(true);
+                }
+                default -> JOptionPane.showMessageDialog(this, "Jenis transaksi tidak dikenali!");
             }
         } else {
             JOptionPane.showMessageDialog(this, "Pilih transaksi dulu!");
@@ -198,13 +214,32 @@ public class TransaksiForm extends javax.swing.JFrame {
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         int row = jTable2.getSelectedRow();
         if(row >= 0) {
-            user.hapusTransaksi(row);
-            loadTransaksiTable();
-            javax.swing.JOptionPane.showMessageDialog(this,
-                "Transaksi berhasil dihapus!");
+            try (Connection conn = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+
+                String id = jTable2.getValueAt(row, 0).toString();
+                String jenis = jTable2.getValueAt(row, 3).toString();
+
+                String sql = switch (jenis) {
+                    case "Pendapatan" -> "DELETE FROM pendapatan WHERE id_pendapatan=?";
+                    case "Pengeluaran" -> "DELETE FROM pengeluaran WHERE id_pengeluaran=?";
+                    case "Hutang" -> "DELETE FROM hutang WHERE id_hutang=?";
+                    case "Tabungan" -> "DELETE FROM tabungan WHERE id_tabungan=?";
+                    default -> null;
+                };
+
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setInt(1, Integer.parseInt(id));
+                ps.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "Data dihapus!");
+                loadTransaksiTable();
+
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Gagal hapus: " + e.getMessage());
+            }
         } else {
-            javax.swing.JOptionPane.showMessageDialog(this,
-                "Pilih transaksi yang mau dihapus!");
+            JOptionPane.showMessageDialog(this, "Pilih data dulu!");
         }
     }//GEN-LAST:event_jButton5ActionPerformed
 
@@ -215,40 +250,88 @@ public class TransaksiForm extends javax.swing.JFrame {
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
         int row = jTable2.getSelectedRow();
         if(row >= 0) {
-            Transaksi t = user.getDaftarTransaksi().get(row);
 
-            // Jalankan proses dari interface
-            t.proses();
+            try (Connection conn = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
 
-            // Tampilkan info di notifikasi
-            JOptionPane.showMessageDialog(this, "Transaksi diproses: " + t.info());
+                String id = jTable2.getValueAt(row, 0).toString();
+                String jenis = jTable2.getValueAt(row, 3).toString();
 
-            // Refresh tabel agar status terbaru muncul
-            loadTransaksiTable();
+                String sql = switch (jenis) {
+                    case "Pendapatan" -> "UPDATE pendapatan SET status=? WHERE id_pendapatan=?";
+                    case "Hutang" -> "UPDATE hutang SET status=? WHERE id_hutang=?";
+                    default -> null;
+                };
+
+                if (sql == null) {
+                    JOptionPane.showMessageDialog(this, "Jenis ini tidak bisa diproses!");
+                    return;
+                }
+
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setString(1, "Selesai");
+                ps.setInt(2, Integer.parseInt(id));
+                ps.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "Transaksi diproses!");
+                loadTransaksiTable();
+
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Gagal proses: " + e.getMessage());
+            }
+
         } else {
             JOptionPane.showMessageDialog(this, "Pilih transaksi dulu!");
         }
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void loadTransaksiTable() {
-        javax.swing.table.DefaultTableModel model =
-            (javax.swing.table.DefaultTableModel) jTable2.getModel();
-        model.setRowCount(0);
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("ID");
+        model.addColumn("Tanggal");
+        model.addColumn("Jumlah");
+        model.addColumn("Jenis");
+        model.addColumn("Prioritas");
+        model.addColumn("Tenggat");
+        model.addColumn("Status");
 
-        if(user != null) {
-            for(Transaksi t : user.getDaftarTransaksi()) {
-                model.addRow(new Object[]{
-                    t.getTanggal(),
-                    t.getJumlah(),
-                    t.getClass().getSimpleName(),
-                    t.getPrioritas(),
-                    (t.getTenggat()!= null ? t.getTenggat() : "-"),
-                    t.status()
-                });
-            }
+        try (Connection conn = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+
+                String sql =
+                    "SELECT idpendapatan, tanggal, jumlah, 'Pendapatan' AS jenis, prioritas, tenggat, status FROM pendapatan " +
+                    "UNION ALL " +
+                    "SELECT idpengeluaran, tanggal, jumlah, 'Pengeluaran', prioritas, tenggat, status FROM pengeluaran " +
+                    "UNION ALL " +
+                    "SELECT idhutang, tanggal, jumlah, 'Hutang', prioritas, tenggat, status FROM hutang " +
+                    "UNION ALL " +
+                    "SELECT idtabungan, tanggal, jumlah, 'Tabungan', prioritas, tenggat, status status FROM tabungan";
+
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery();
+
+                model.setRowCount(0);
+
+                while (rs.next()) {
+                    model.addRow(new Object[]{
+                        rs.getInt("id"),
+                        rs.getString("tanggal"),
+                        rs.getDouble("jumlah"),
+                        rs.getString("jenis"),
+                        rs.getString("prioritas"),
+                        rs.getString("tenggat"),
+                        rs.getString("status")
+                    });
+                }
+
+                jTable2.setModel(model);
+
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Gagal load transaksi: " + e.getMessage());
         }
     }
-   
+    
+    
     public static void main(String args[]) {
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
@@ -276,4 +359,5 @@ public class TransaksiForm extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable2;
     // End of variables declaration//GEN-END:variables
-}
+
+}   

@@ -4,11 +4,16 @@ import javax.swing.*;
 import com.mycompany.sistemkeuangan.model.Tabungan;
 import com.mycompany.sistemkeuangan.model.User;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
 public class TabunganForm extends javax.swing.JFrame {
 
     private User user;
     private Tabungan tabungan;
-    private String statusBaru;
+    private String status;
 
     public TabunganForm(User user) {
         this.user = user;
@@ -190,32 +195,55 @@ public class TabunganForm extends javax.swing.JFrame {
     }//GEN-LAST:event_jFormattedTextField1ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        try {
+
         String tanggal = jFormattedTextField1.getText();
         double jumlah = Double.parseDouble(jTextField2.getText());
         String prioritas = jTextField3.getText();
         String tenggat = jFormattedTextField2.getText();
         String tujuan = jTextField5.getText();
+        String status = jComboBoxStatus.getSelectedItem().toString();
 
-        if (tabungan != null) {
-            // EDIT transaksi lama
-            tabungan.setTanggal(tanggal);
-            tabungan.setJumlah(jumlah);
-            tabungan.setPrioritas(prioritas);
-            tabungan.setTenggat(tenggat);
-            tabungan.setTujuan(tujuan);
-            tabungan.setStatus(tenggat);
-            JOptionPane.showMessageDialog(this, "Tabungan berhasil diedit!");
-        } else {
-            // TAMBAH transaksi baru
+        try (Connection conn = DriverManager.getConnection(
+            "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+
+            // =========================
+            // 1. SIMPAN KE TRANSAKSI
+            // =========================
+            String sql1 = "INSERT INTO transaksi (iduser, tanggal, jumlah, jenis, prioritas, tenggat, status, iduser) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            PreparedStatement ps1 = conn.prepareStatement(sql1);
+            ps1.setString(1, tanggal);
+            ps1.setDouble(2, jumlah);
+            ps1.setString(3, "Tabungan");
+            ps1.setString(4, prioritas);
+            ps1.setString(5, tenggat);
+            ps1.setString(6, status);
+            ps1.setInt(7, user.getIduser());
+            ps1.executeUpdate();
+
+            // =========================
+            // 2. SIMPAN KE TABEL TABUNGAN
+            // =========================
+            String sql2 = "INSERT INTO tabungan (jumlah, tujuan, id_user) VALUES (?, ?, ?)";
+            PreparedStatement ps2 = conn.prepareStatement(sql2);
+            ps2.setDouble(1, jumlah);
+            ps2.setString(2, tujuan);
+            ps2.setInt(3, user.getIduser());
+            ps2.executeUpdate();
+
+            // =========================
+            // 3. OOP PROCESS
+            // =========================
             Tabungan t = new Tabungan(tanggal, jumlah, prioritas, tenggat, tujuan);
-            t.setStatus(statusBaru);
-            if(user != null) user.tambahTransaksi(t);
-            JOptionPane.showMessageDialog(this, "Tabungan berhasil ditambahkan!");
-        }
-        dispose();
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Jumlah harus berupa angka!");
+            t.setStatus(status);
+
+            t.proses();
+
+            JOptionPane.showMessageDialog(this, t.info());
+
+            dispose();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Gagal simpan tabungan: " + e.getMessage());
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 
