@@ -4,7 +4,6 @@ public class Tabungan extends Transaksi {
     
     private int idTabungan;
     private String tujuan;
-    private String currentStatus;
 
     public Tabungan(String tanggal, double jumlah,
                     String prioritas, String tenggat,
@@ -13,7 +12,7 @@ public class Tabungan extends Transaksi {
         super(tanggal, jumlah, prioritas, tenggat);
 
         this.tujuan = tujuan;
-        this.currentStatus = "Belum Terkumpul";
+        this.status = "Belum Terkumpul";
     }
 
     public String getTujuan() {
@@ -45,10 +44,10 @@ public class Tabungan extends Transaksi {
 
     @Override
     public String status() {
-        return currentStatus;
+        return status;
     }
 
     public void setStatus(String newStatus) {
-        this.currentStatus = newStatus;
+        this.status = newStatus;
     }    
 }

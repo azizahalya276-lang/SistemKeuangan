@@ -203,47 +203,31 @@ public class TabunganForm extends javax.swing.JFrame {
         String tujuan = jTextField5.getText();
         String status = jComboBoxStatus.getSelectedItem().toString();
 
-        try (Connection conn = DriverManager.getConnection(
-            "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+        try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
 
-            // =========================
-            // 1. SIMPAN KE TRANSAKSI
-            // =========================
-            String sql1 = "INSERT INTO transaksi (iduser, tanggal, jumlah, jenis, prioritas, tenggat, status, iduser) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement ps1 = conn.prepareStatement(sql1);
-            ps1.setString(1, tanggal);
-            ps1.setDouble(2, jumlah);
-            ps1.setString(3, "Tabungan");
-            ps1.setString(4, prioritas);
-            ps1.setString(5, tenggat);
-            ps1.setString(6, status);
-            ps1.setInt(7, user.getIduser());
-            ps1.executeUpdate();
+        // ✅ Bug 1 diperbaiki: hapus sql1, langsung simpan ke tabungan
+        // ✅ Bug 2 diperbaiki: masukkan semua kolom yang dibutuhkan
+        String sql = "INSERT INTO tabungan (tanggal, jumlah, prioritas, tenggat, tujuan, status, id_user) "
+        + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, tanggal);
+        ps.setDouble(2, jumlah);
+        ps.setString(3, prioritas);
+        ps.setString(4, tenggat);
+        ps.setString(5, tujuan);
+        ps.setString(6, status);
+        ps.setInt(7, user.getIduser());
+        ps.executeUpdate();
 
-            // =========================
-            // 2. SIMPAN KE TABEL TABUNGAN
-            // =========================
-            String sql2 = "INSERT INTO tabungan (jumlah, tujuan, id_user) VALUES (?, ?, ?)";
-            PreparedStatement ps2 = conn.prepareStatement(sql2);
-            ps2.setDouble(1, jumlah);
-            ps2.setString(2, tujuan);
-            ps2.setInt(3, user.getIduser());
-            ps2.executeUpdate();
-
-            // =========================
-            // 3. OOP PROCESS
-            // =========================
-            Tabungan t = new Tabungan(tanggal, jumlah, prioritas, tenggat, tujuan);
-            t.setStatus(status);
-
-            t.proses();
-
-            JOptionPane.showMessageDialog(this, t.info());
-
-            dispose();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Gagal simpan tabungan: " + e.getMessage());
+        Tabungan t = new Tabungan(tanggal, jumlah, prioritas, tenggat, tujuan);
+        t.setStatus(status);
+        t.proses();
+        JOptionPane.showMessageDialog(this, t.info());
+        dispose();
+        } 
+        catch (Exception e) 
+        {
+        JOptionPane.showMessageDialog(this, "Gagal simpan tabungan: " + e.getMessage());
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 

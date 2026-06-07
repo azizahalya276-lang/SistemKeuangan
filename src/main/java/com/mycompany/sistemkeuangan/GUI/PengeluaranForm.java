@@ -194,46 +194,28 @@ public class PengeluaranForm extends javax.swing.JFrame {
         String kebutuhan = jTextField5.getText();
         String status = jComboBoxStatus.getSelectedItem().toString();
 
-        try (Connection conn = DriverManager.getConnection(
-            "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+        try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
 
-            // =========================
-            // 1. SIMPAN KE TRANSAKSI
-            // =========================
-            String sqlTransaksi = "INSERT INTO transaksi (iduser,tanggal, jumlah, jenis, prioritas, tenggat, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement ps1 = conn.prepareStatement(sqlTransaksi);
-            ps1.setString(1, tanggal);
-            ps1.setDouble(2, jumlah);
-            ps1.setString(3, "Pengeluaran");
-            ps1.setString(4, prioritas);
-            ps1.setString(5, tenggat);
-            ps1.setString(6, status);
-            ps1.setInt(7, user.getIduser());
-            ps1.executeUpdate();
+            // ✅ Hapus sqlTransaksi, langsung INSERT ke pengeluaran dengan kolom lengkap
+            String sql = "INSERT INTO pengeluaran (tanggal, jumlah, prioritas, tenggat, kebutuhan, status, id_user) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, tanggal);
+            ps.setDouble(2, jumlah);
+            ps.setString(3, prioritas);
+            ps.setString(4, tenggat);
+            ps.setString(5, kebutuhan);
+            ps.setString(6, status);
+            ps.setInt(7, user.getIduser());
+            ps.executeUpdate();
 
-            // =========================
-            // 2. SIMPAN KE PENGELUARAN
-            // =========================
-            String sqlPengeluaran = "INSERT INTO pengeluaran (jumlah, kebutuhan, id_user) VALUES (?, ?, ?)";
-            PreparedStatement ps2 = conn.prepareStatement(sqlPengeluaran);
-            ps2.setDouble(1, jumlah);
-            ps2.setString(2, kebutuhan);
-            ps2.setInt(3, user.getIduser());
-            ps2.executeUpdate();
-
-            // =========================
-            // 3. OOP PROCESS
-            // =========================
             Pengeluaran p = new Pengeluaran(tanggal, jumlah, prioritas, tenggat, kebutuhan);
             p.setStatus(status);
-
             p.proses();
-
             JOptionPane.showMessageDialog(this, p.info());
-
             dispose();
-
-        } catch (Exception e) {
+        } 
+        catch (Exception e) 
+        {
             JOptionPane.showMessageDialog(this, "Gagal simpan pengeluaran: " + e.getMessage());
         }
     }//GEN-LAST:event_jButton1ActionPerformed

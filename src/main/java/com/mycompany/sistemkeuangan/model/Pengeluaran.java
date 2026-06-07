@@ -5,7 +5,6 @@ public class Pengeluaran extends Transaksi {
 
     private int idPengeluaran;
     private String kebutuhan;
-    private String currentStatus;
 
     public Pengeluaran(String tanggal, double jumlah,
                        String prioritas, String tenggat,
@@ -13,7 +12,7 @@ public class Pengeluaran extends Transaksi {
 
         super(tanggal, jumlah, prioritas, tenggat);
         this.kebutuhan = kebutuhan;
-        this.currentStatus = "Pending";
+        this.status = "Pending";
     }
 
     public String getKebutuhan() {
@@ -35,7 +34,7 @@ public class Pengeluaran extends Transaksi {
     @Override
     public void proses() {
         System.out.println("Pengeluaran sebesar -" + getJumlah());
-        currentStatus = "Selesai";
+        status = "Selesai";
     }
 
     @Override
@@ -46,10 +45,10 @@ public class Pengeluaran extends Transaksi {
 
     @Override
     public String status() {
-        return currentStatus;
+        return status;
     }
 
     public void setStatus(String newStatus) {
-        this.currentStatus = newStatus;
+        this.status = newStatus;
     }
 }    

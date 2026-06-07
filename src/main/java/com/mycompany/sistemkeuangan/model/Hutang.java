@@ -5,7 +5,6 @@ public class Hutang extends Transaksi {
     private int idtransaksi;
     private String pemberiPinjaman;
     private String jatuhTempo;
-    private String currentStatus;
 
     public Hutang(String tanggal, double jumlah,
                   String prioritas, String tenggat,
@@ -15,7 +14,7 @@ public class Hutang extends Transaksi {
 
         this.pemberiPinjaman = pemberiPinjaman;
         this.jatuhTempo = jatuhTempo;
-        this.currentStatus = "Belum Lunas";
+        this.status = "Belum Lunas";
     }
 
     public String getPemberiPinjaman() {
@@ -45,7 +44,7 @@ public class Hutang extends Transaksi {
     @Override
     public void proses() {
         System.out.println("Hutang dicatat sebesar Rp " + getJumlah());
-        currentStatus = "Belum Lunas";
+        status = "Belum Lunas";
     }
 
     @Override
@@ -57,10 +56,10 @@ public class Hutang extends Transaksi {
 
     @Override
     public String status() {
-        return currentStatus;
+        return status;
     }
 
     public void setStatus(String newStatus) {
-        this.currentStatus = newStatus;
+        this.status = newStatus;
     }
 }

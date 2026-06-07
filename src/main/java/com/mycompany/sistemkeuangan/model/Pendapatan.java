@@ -4,14 +4,14 @@ public class Pendapatan extends Transaksi {
 
     private int idtransaksi;
     private String sumber;
-    private String currentStatus;
+    //private String status; << tidak perlu 
 
 
     public Pendapatan(String tanggal, double jumlah, String prioritas,
                   String tenggat, String sumber) {
     super(tanggal, jumlah, prioritas, tenggat);
     this.sumber = sumber;
-    this.currentStatus = "Pending";
+    this.status = "Pending";
     }
 
 
@@ -44,10 +44,10 @@ public class Pendapatan extends Transaksi {
 
     @Override
     public String status() {
-        return currentStatus;
+        return status;
     }
     
     public void setStatus(String newStatus) {
-        this.currentStatus = newStatus;
+        this.status = newStatus;
     }
 }
