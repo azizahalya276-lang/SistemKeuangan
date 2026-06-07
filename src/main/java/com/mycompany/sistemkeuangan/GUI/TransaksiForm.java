@@ -2,7 +2,6 @@ package com.mycompany.sistemkeuangan.GUI;
 import javax.swing.JOptionPane;
 import com.mycompany.sistemkeuangan.model.Pendapatan;
 import com.mycompany.sistemkeuangan.model.Pengeluaran;
-import com.mycompany.sistemkeuangan.model.Tagihan;
 import com.mycompany.sistemkeuangan.model.Hutang;
 import com.mycompany.sistemkeuangan.model.Tabungan;
 import com.mycompany.sistemkeuangan.model.Transaksi;
@@ -160,7 +159,6 @@ public class TransaksiForm extends javax.swing.JFrame {
             switch (t) {
                 case Pendapatan pendapatan -> new PendapatanForm(user, pendapatan).setVisible(true);
                 case Pengeluaran pengeluaran -> new PengeluaranForm(user, pengeluaran).setVisible(true);
-                case Tagihan tagihan -> new TagihanForm(user, tagihan).setVisible(true);
                 case Hutang hutang -> new HutangForm(user, hutang).setVisible(true);
                 case Tabungan tabungan -> new TabunganForm(user, tabungan).setVisible(true);
                 default -> {
@@ -190,7 +188,6 @@ public class TransaksiForm extends javax.swing.JFrame {
                pf.setVisible(true);
             }
             case 1 -> new PengeluaranForm(user).setVisible(true);
-            case 2 -> new TagihanForm(user).setVisible(true);
             case 3 -> new HutangForm(user).setVisible(true);
             case 4 -> new TabunganForm(user).setVisible(true);
             default -> {
