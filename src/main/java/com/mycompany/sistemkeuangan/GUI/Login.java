@@ -1,33 +1,23 @@
 package com.mycompany.sistemkeuangan.GUI;
 
 import com.mycompany.sistemkeuangan.model.User;
-import java.awt.event.ActionEvent;
-import javax.swing.*;
+import com.mycompany.sistemkeuangan.model.KoneksiDB;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.swing.JOptionPane;
 
 public class Login extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger =
         java.util.logging.Logger.getLogger(Login.class.getName());
 
-
     public Login() {
         initComponents();
-        setLocationRelativeTo(null); // form muncul di tengah layar
-        
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
-
-        jButton1.setText("Login");
-        jButton1.addActionListener(this::jButtonLoginActionPerformed);
-
-        jButton2.setText("Register");
-        jButton2.addActionListener(this::jButtonRegisterActionPerformed);
+        setLocationRelativeTo(null);
     }
+
     
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -123,33 +113,40 @@ public class Login extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        int iduser = Integer.parseInt(jTextField1.getText());
-        String nama = jTextField2.getText();
-        String password = new String(jPasswordField1.getPassword());
+        try {
+            int iduser = Integer.parseInt(jTextField1.getText().trim());
+            String nama = jTextField2.getText().trim();
+            String password = new String(jPasswordField1.getPassword());
 
-        try (Connection conn = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+            try (Connection conn = KoneksiDB.getConnection()) {
+                if (conn == null) {
+                    JOptionPane.showMessageDialog(this, "Koneksi database gagal!");
+                    return;
+                }
+                String sql = "SELECT * FROM user WHERE iduser=? AND nama=? AND password=?";
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setInt(1, iduser);
+                ps.setString(2, nama);
+                ps.setString(3, password);
 
-            String sql = "SELECT * FROM user WHERE iduser=? AND nama=? AND password=?";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, iduser);
-            ps.setString(2, nama);
-            ps.setString(3, password);
+                ResultSet rs = ps.executeQuery();
 
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-            User user = new User(rs.getInt("iduser"),
-                                 rs.getString("nama"),
-                                 rs.getString("password"));
-            JOptionPane.showMessageDialog(this, "Login berhasil!");
-
-            TransaksiForm mainForm = new TransaksiForm(user);
-            mainForm.setVisible(true);
-            this.dispose(); // tutup form login
-        } else {
-                JOptionPane.showMessageDialog(this, "User ID/Nama/Password salah!");
+                if (rs.next()) {
+                    User user = new User(
+                        rs.getInt("iduser"),
+                        rs.getString("nama"),
+                        rs.getString("password")
+                    );
+                    JOptionPane.showMessageDialog(this, "Login berhasil!");
+                    TransaksiForm mainForm = new TransaksiForm(user);
+                    mainForm.setVisible(true);
+                    this.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(this, "User ID / Nama / Password salah!");
+                }
             }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "User ID harus berupa angka!");
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Koneksi database gagal: " + e.getMessage());
         }
@@ -168,30 +165,36 @@ public class Login extends javax.swing.JFrame {
     }//GEN-LAST:event_jPasswordField1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        String iduser = jTextField1.getText();
-        String nama = jTextField2.getText();
+         String iduserStr = jTextField1.getText().trim();
+        String nama = jTextField2.getText().trim();
         String password = new String(jPasswordField1.getPassword());
 
-        try (Connection conn = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+        if (iduserStr.isEmpty() || nama.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Semua field harus diisi!");
+            return;
+        }
 
-            // cek apakah iduser atau nama sudah ada
+        try (Connection conn = KoneksiDB.getConnection()) {
+            if (conn == null) {
+                JOptionPane.showMessageDialog(this, "Koneksi database gagal!");
+                return;
+            }
+
             String cekSql = "SELECT * FROM user WHERE iduser=? OR nama=?";
             PreparedStatement cekPs = conn.prepareStatement(cekSql);
-            cekPs.setString(1, iduser);
+            cekPs.setString(1, iduserStr);
             cekPs.setString(2, nama);
             ResultSet rs = cekPs.executeQuery();
 
             if (rs.next()) {
-                JOptionPane.showMessageDialog(this, "User ID/Nama sudah digunakan!");
+                JOptionPane.showMessageDialog(this, "User ID / Nama sudah digunakan!");
             } else {
                 String insertSql = "INSERT INTO user (iduser, nama, password) VALUES (?, ?, ?)";
                 PreparedStatement insertPs = conn.prepareStatement(insertSql);
-                insertPs.setString(1, iduser);
+                insertPs.setString(1, iduserStr);
                 insertPs.setString(2, nama);
                 insertPs.setString(3, password);
                 insertPs.executeUpdate();
-
                 JOptionPane.showMessageDialog(this, "Registrasi berhasil, silakan login!");
             }
         } catch (SQLException e) {
@@ -213,10 +216,9 @@ public class Login extends javax.swing.JFrame {
         } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
             logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
-
         java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
     }
-
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
@@ -229,11 +231,4 @@ public class Login extends javax.swing.JFrame {
     private javax.swing.JTextField jTextField2;
     // End of variables declaration//GEN-END:variables
 
-    private void jButtonLoginActionPerformed(ActionEvent e) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    private void jButtonRegisterActionPerformed(ActionEvent e) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
 }

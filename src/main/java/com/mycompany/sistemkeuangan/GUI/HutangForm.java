@@ -1,19 +1,17 @@
 package com.mycompany.sistemkeuangan.GUI;
 
-import javax.swing.*;
 import com.mycompany.sistemkeuangan.model.Hutang;
 import com.mycompany.sistemkeuangan.model.User;
-
+import com.mycompany.sistemkeuangan.model.KoneksiDB;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import javax.swing.JOptionPane;
 
 public class HutangForm extends javax.swing.JFrame {
 
     private User user;
     private Hutang hutang;
-    private String statusBaru;
 
     public HutangForm(User user) {
         this.user = user;
@@ -25,23 +23,23 @@ public class HutangForm extends javax.swing.JFrame {
         initComponents();
         setLocationRelativeTo(null);
     }
-    
-    public HutangForm(User user, Hutang h) {
-    this.user = user;
-    this.hutang = h;
-    initComponents();
-    setLocationRelativeTo(null);
 
-    jFormattedTextField1.setText(h.getTanggal());
-    jTextField2.setText(String.valueOf(h.getJumlah()));
-    jTextField3.setText(h.getPrioritas());
-    jFormattedTextField2.setText(h.getTenggat());
-    jTextField5.setText(h.getPemberiPinjaman());
-    jFormattedTextField3.setText(h.getJatuhTempo());
-    
-    jComboBoxStatus.setModel(new DefaultComboBoxModel<>(new String[] { "Belum Lunas", "Lunas" }));
-    jComboBoxStatus.setSelectedItem(h.status());
-}
+    public HutangForm(User user, Hutang h) {
+        this.user = user;
+        this.hutang = h;
+        initComponents();
+        setLocationRelativeTo(null);
+
+        jFormattedTextField1.setText(h.getTanggal());
+        jTextField2.setText(String.valueOf(h.getJumlah()));
+        jTextField3.setText(h.getPrioritas());
+        jFormattedTextField2.setText(h.getTenggat());
+        jTextField5.setText(h.getPemberiPinjaman());
+        jFormattedTextField3.setText(h.getJatuhTempo());
+
+        jComboBoxStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[]{"Belum Lunas", "Lunas"}));
+        jComboBoxStatus.setSelectedItem(h.status());
+    }
  
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -196,39 +194,81 @@ public class HutangForm extends javax.swing.JFrame {
     }//GEN-LAST:event_jFormattedTextField1ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-       
-        String tanggal = jFormattedTextField1.getText();
-        double jumlah = Double.parseDouble(jTextField2.getText());
-        String prioritas = jTextField3.getText();
-        String tenggat = jFormattedTextField2.getText();
-        String pemberiPinjaman = jTextField5.getText();
-        String jatuhTempo = jFormattedTextField3.getText();
+       String tanggal = jFormattedTextField1.getText().trim();
+        String jumlahStr = jTextField2.getText().trim();
+        String prioritas = jTextField3.getText().trim();
+        String tenggat = jFormattedTextField2.getText().trim();
+        String pemberiPinjaman = jTextField5.getText().trim();
+        String jatuhTempo = jFormattedTextField3.getText().trim();
         String status = jComboBoxStatus.getSelectedItem().toString();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
+        if (tanggal.isEmpty() || jumlahStr.isEmpty() || pemberiPinjaman.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tanggal, jumlah, dan pemberi pinjaman wajib diisi!");
+            return;
+        }
 
-            // ✅ Hapus sql1, INSERT hutang dengan parameter urutan BENAR dan kolom lengkap
-            String sql = "INSERT INTO hutang (tanggal, jumlah, prioritas, tenggat, pemberi_pinjaman, jatuh_tempo, status, iduser) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, tanggal);
-            ps.setDouble(2, jumlah);
-            ps.setString(3, prioritas);
-            ps.setString(4, tenggat);
-            ps.setString(5, pemberiPinjaman);
-            ps.setString(6, jatuhTempo);
-            ps.setString(7, status);
-            ps.setInt(8, user.getIduser());
-            ps.executeUpdate();
+        try {
+            double jumlah = Double.parseDouble(jumlahStr);
 
-            Hutang h = new Hutang(tanggal, jumlah, prioritas, tenggat, pemberiPinjaman, jatuhTempo);
-            h.setStatus(status);
-            h.proses();
-            JOptionPane.showMessageDialog(this, h.info());
-            dispose();
+            try (Connection conn = KoneksiDB.getConnection()) {
+                if (conn == null) {
+                    JOptionPane.showMessageDialog(this, "Koneksi database gagal!");
+                    return;
+                }
 
-        } 
-        catch (Exception e) 
-        {
+                if (hutang == null) {
+                    // === INSERT TRANSAKSI ===
+                    String sql1 = "INSERT INTO transaksi (iduser, tanggal, jumlah, jenis, prioritas, tenggat, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    PreparedStatement ps1 = conn.prepareStatement(sql1, PreparedStatement.RETURN_GENERATED_KEYS);
+                    ps1.setInt(1, user.getIduser());
+                    ps1.setString(2, tanggal);
+                    ps1.setDouble(3, jumlah);
+                    ps1.setString(4, "Hutang");
+                    ps1.setString(5, prioritas);
+                    ps1.setString(6, tenggat);
+                    ps1.setString(7, status);
+                    ps1.executeUpdate();
+
+                    java.sql.ResultSet rs = ps1.getGeneratedKeys();
+                    rs.next();
+                    int idtransaksi = rs.getInt(1);
+
+                    // === INSERT HUTANG ===
+                    String sql2 = "INSERT INTO hutang (idtransaksi, jatuhtempo, pemberipinjaman) VALUES (?, ?, ?)";
+                    PreparedStatement ps2 = conn.prepareStatement(sql2);
+                    ps2.setInt(1, idtransaksi);
+                    ps2.setString(2, jatuhTempo);
+                    ps2.setString(3, pemberiPinjaman);
+                    ps2.executeUpdate();
+
+                    JOptionPane.showMessageDialog(this, "Hutang berhasil disimpan!");
+                } else {
+                    // === UPDATE TRANSAKSI ===
+                    String sql1 = "UPDATE transaksi SET tanggal=?, jumlah=?, prioritas=?, tenggat=?, status=? WHERE idtransaksi=?";
+                    PreparedStatement ps1 = conn.prepareStatement(sql1);
+                    ps1.setString(1, tanggal);
+                    ps1.setDouble(2, jumlah);
+                    ps1.setString(3, prioritas);
+                    ps1.setString(4, tenggat);
+                    ps1.setString(5, status);
+                    ps1.setInt(6, hutang.getIdtransaksi());
+                    ps1.executeUpdate();
+
+                    // === UPDATE HUTANG ===
+                    String sql2 = "UPDATE hutang SET jatuhtempo=?, pemberipinjaman=? WHERE idtransaksi=?";
+                    PreparedStatement ps2 = conn.prepareStatement(sql2);
+                    ps2.setString(1, jatuhTempo);
+                    ps2.setString(2, pemberiPinjaman);
+                    ps2.setInt(3, hutang.getIdtransaksi());
+                    ps2.executeUpdate();
+
+                    JOptionPane.showMessageDialog(this, "Hutang berhasil diupdate!");
+                }
+                dispose();
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Jumlah uang harus berupa angka!");
+        } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Gagal simpan hutang: " + e.getMessage());
         }
     }//GEN-LAST:event_jButton1ActionPerformed
@@ -253,22 +293,17 @@ public class HutangForm extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-       try {
-        for (javax.swing.UIManager.LookAndFeelInfo info :
-             javax.swing.UIManager.getInstalledLookAndFeels()) {
-            if ("Nimbus".equals(info.getName())) {
-                javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                break;
+      try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
             }
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(HutangForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-    } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-        java.util.logging.Logger.getLogger(HutangForm.class.getName())
-            .log(java.util.logging.Level.SEVERE, null, ex);
-    }
-
-    java.awt.EventQueue.invokeLater(() -> {
-        new HutangForm().setVisible(true);
-    });
+        java.awt.EventQueue.invokeLater(() -> new HutangForm().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

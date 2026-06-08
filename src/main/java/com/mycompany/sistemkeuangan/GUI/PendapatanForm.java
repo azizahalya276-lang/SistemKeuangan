@@ -1,14 +1,14 @@
 package com.mycompany.sistemkeuangan.GUI;
 
-import javax.swing.*;
 import com.mycompany.sistemkeuangan.model.Pendapatan;
 import com.mycompany.sistemkeuangan.model.User;
-
+import com.mycompany.sistemkeuangan.model.KoneksiDB;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JOptionPane;
+
 
 public class PendapatanForm extends javax.swing.JFrame {
 
@@ -210,10 +210,7 @@ public class PendapatanForm extends javax.swing.JFrame {
             String sumber = jTextField5.getText();
             String status = jComboBoxStatus.getSelectedItem().toString();
 
-            Connection conn = DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/sistemkeuangan",
-                    "root",
-                    "");
+            Connection conn = KoneksiDB.getConnection();
 
             if (pendapatan == null) {
 
@@ -341,7 +338,7 @@ public class PendapatanForm extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        try {
+         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : 
                  javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {

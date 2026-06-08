@@ -1,18 +1,19 @@
 package com.mycompany.sistemkeuangan.GUI;
 
-import javax.swing.*;
 import com.mycompany.sistemkeuangan.model.Pengeluaran;
 import com.mycompany.sistemkeuangan.model.User;
-
+import com.mycompany.sistemkeuangan.model.KoneksiDB;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
 
 public class PengeluaranForm extends javax.swing.JFrame {
 
     private User user;
     private Pengeluaran pengeluaran;
-   
+
     public PengeluaranForm(User user) {
         this.user = user;
         initComponents();
@@ -24,21 +25,20 @@ public class PengeluaranForm extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }
 
-   public PengeluaranForm(User user, Pengeluaran p) {
-    this.user = user;
-    this.pengeluaran = p; // field baru di class
-    initComponents();
-    setLocationRelativeTo(null);
+    public PengeluaranForm(User user, Pengeluaran p) {
+        this.user = user;
+        this.pengeluaran = p;
+        initComponents();
+        setLocationRelativeTo(null);
 
-    jFormattedTextField1.setText(p.getTanggal());
-    jTextField2.setText(String.valueOf(p.getJumlah()));
-    jTextField3.setText(p.getPrioritas());
-    jFormattedTextField2.setText(p.getTenggat());
-    jTextField5.setText(p.getKebutuhan()); 
-    
-    
-    jComboBoxStatus.setModel(new DefaultComboBoxModel<>(new String[] { "Pending", "Selesai" }));
-    jComboBoxStatus.setSelectedItem(p.status());
+        jFormattedTextField1.setText(p.getTanggal());
+        jTextField2.setText(String.valueOf(p.getJumlah()));
+        jTextField3.setText(p.getPrioritas());
+        jFormattedTextField2.setText(p.getTenggat());
+        jTextField5.setText(p.getKebutuhan());
+
+        jComboBoxStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[]{"Pending", "Selesai"}));
+        jComboBoxStatus.setSelectedItem(p.status());
     }
    
     @SuppressWarnings("unchecked")
@@ -186,38 +186,80 @@ public class PengeluaranForm extends javax.swing.JFrame {
     }//GEN-LAST:event_jFormattedTextField1ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-       
-        String tanggal = jFormattedTextField1.getText();
-        double jumlah = Double.parseDouble(jTextField2.getText());
-        String prioritas = jTextField3.getText();
-        String tenggat = jFormattedTextField2.getText();
-        String kebutuhan = jTextField5.getText();
+ String tanggal = jFormattedTextField1.getText().trim();
+        String jumlahStr = jTextField2.getText().trim();
+        String prioritas = jTextField3.getText().trim();
+        String tenggat = jFormattedTextField2.getText().trim();
+        String kebutuhan = jTextField5.getText().trim();
         String status = jComboBoxStatus.getSelectedItem().toString();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/sistemkeuangan", "root", "")) {
-
-            // ✅ Hapus sqlTransaksi, langsung INSERT ke pengeluaran dengan kolom lengkap
-            String sql = "INSERT INTO pengeluaran (tanggal, jumlah, prioritas, tenggat, kebutuhan, status, id_user) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, tanggal);
-            ps.setDouble(2, jumlah);
-            ps.setString(3, prioritas);
-            ps.setString(4, tenggat);
-            ps.setString(5, kebutuhan);
-            ps.setString(6, status);
-            ps.setInt(7, user.getIduser());
-            ps.executeUpdate();
-
-            Pengeluaran p = new Pengeluaran(tanggal, jumlah, prioritas, tenggat, kebutuhan);
-            p.setStatus(status);
-            p.proses();
-            JOptionPane.showMessageDialog(this, p.info());
-            dispose();
-        } 
-        catch (Exception e) 
-        {
-            JOptionPane.showMessageDialog(this, "Gagal simpan pengeluaran: " + e.getMessage());
+        if (tanggal.isEmpty() || jumlahStr.isEmpty() || kebutuhan.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tanggal, jumlah, dan kebutuhan wajib diisi!");
+            return;
         }
+
+        try {
+            double jumlah = Double.parseDouble(jumlahStr);
+
+            try (Connection conn = KoneksiDB.getConnection()) {
+                if (conn == null) {
+                    JOptionPane.showMessageDialog(this, "Koneksi database gagal!");
+                    return;
+                }
+
+                if (pengeluaran == null) {
+                    // === INSERT TRANSAKSI ===
+                    String sql1 = "INSERT INTO transaksi (iduser, tanggal, jumlah, jenis, prioritas, tenggat, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    PreparedStatement ps1 = conn.prepareStatement(sql1, PreparedStatement.RETURN_GENERATED_KEYS);
+                    ps1.setInt(1, user.getIduser());
+                    ps1.setString(2, tanggal);
+                    ps1.setDouble(3, jumlah);
+                    ps1.setString(4, "Pengeluaran");
+                    ps1.setString(5, prioritas);
+                    ps1.setString(6, tenggat);
+                    ps1.setString(7, status);
+                    ps1.executeUpdate();
+
+                    ResultSet rs = ps1.getGeneratedKeys();
+                    rs.next();
+                    int idtransaksi = rs.getInt(1);
+
+                    // === INSERT PENGELUARAN ===
+                    String sql2 = "INSERT INTO pengeluaran (idtransaksi, kebutuhan) VALUES (?, ?)";
+                    PreparedStatement ps2 = conn.prepareStatement(sql2);
+                    ps2.setInt(1, idtransaksi);
+                    ps2.setString(2, kebutuhan);
+                    ps2.executeUpdate();
+
+                    JOptionPane.showMessageDialog(this, "Pengeluaran berhasil disimpan!");
+                } else {
+                    // === UPDATE TRANSAKSI ===
+                    String sql1 = "UPDATE transaksi SET tanggal=?, jumlah=?, prioritas=?, tenggat=?, status=? WHERE idtransaksi=?";
+                    PreparedStatement ps1 = conn.prepareStatement(sql1);
+                    ps1.setString(1, tanggal);
+                    ps1.setDouble(2, jumlah);
+                    ps1.setString(3, prioritas);
+                    ps1.setString(4, tenggat);
+                    ps1.setString(5, status);
+                    ps1.setInt(6, pengeluaran.getIdPengeluaran());
+                    ps1.executeUpdate();
+
+                    // === UPDATE PENGELUARAN ===
+                    String sql2 = "UPDATE pengeluaran SET kebutuhan=? WHERE idtransaksi=?";
+                    PreparedStatement ps2 = conn.prepareStatement(sql2);
+                    ps2.setString(1, kebutuhan);
+                    ps2.setInt(2, pengeluaran.getIdPengeluaran());
+                    ps2.executeUpdate();
+
+                    JOptionPane.showMessageDialog(this, "Pengeluaran berhasil diupdate!");
+                }
+                dispose();
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Jumlah uang harus berupa angka!");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Gagal simpan pengeluaran: " + e.getMessage());
+        }       
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
@@ -237,22 +279,16 @@ public class PengeluaranForm extends javax.swing.JFrame {
      */
     public static void main(String args[]) {
         try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : 
-                 javax.swing.UIManager.getInstalledLookAndFeels()) {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
                     javax.swing.UIManager.setLookAndFeel(info.getClassName());
                     break;
                 }
             }
         } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(PengeluaranForm.class.getName())
-                .log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(PengeluaranForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> {
-            new PengeluaranForm().setVisible(true);
-        });
+        java.awt.EventQueue.invokeLater(() -> new PengeluaranForm().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
