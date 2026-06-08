@@ -278,7 +278,7 @@ public class TransaksiForm extends javax.swing.JFrame {
 
                 int id = Integer.parseInt(jTable2.getValueAt(row, 0).toString());
 
-                String sql = "DELETE FROM transaksi WHERE idtransaksi=?";
+                String sql = "DELETE FROM transaksi WHERE idt_ransaksi=?";
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ps.setInt(1, id);
                 ps.executeUpdate();
@@ -314,7 +314,7 @@ public class TransaksiForm extends javax.swing.JFrame {
                 switch (jenis) {
 
                     case "Pendapatan":
-                        String sql1 = "SELECT sumber FROM pendapatan WHERE idtransaksi=?";
+                        String sql1 = "SELECT sumber FROM pendapatan WHERE id_transaksi=?";
                         PreparedStatement ps1 = conn.prepareStatement(sql1);
                         ps1.setInt(1, id);
                         ResultSet rs1 = ps1.executeQuery();
